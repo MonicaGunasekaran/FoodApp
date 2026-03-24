@@ -24,7 +24,9 @@ public class Response {
 
             response.put("status", "success");
             response.put("message", message);
-            response.put("data", data);
+            if (data != null) {
+                response.put("data", data);
+            }
 
             byte[] json = mapper.writeValueAsBytes(response);
 

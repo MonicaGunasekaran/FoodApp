@@ -1,5 +1,6 @@
 package com.foodapp.foodapp.security;
 import java.net.HttpURLConnection;
+import java.util.UUID;
 
 import com.foodapp.foodapp.utils.JwtUtil;
 import com.foodapp.foodapp.utils.Response;
@@ -27,7 +28,7 @@ public class JwtAuthHandler implements HttpHandler {
 
             exchange.setAttribute(
                     "userId",
-                    JwtUtil.getUserId(token)
+                    UUID.fromString(JwtUtil.getUserId(token)) 
             );
 
             exchange.setAttribute(

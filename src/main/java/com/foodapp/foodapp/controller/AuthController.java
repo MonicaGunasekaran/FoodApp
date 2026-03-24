@@ -139,16 +139,18 @@ public class AuthController implements HttpHandler {
                         if (created) {
                             Response.success(exchange,
                                     HttpURLConnection.HTTP_CREATED,
-                                    "Admin created. Waiting for verification",
+                                    "Admin created successfully. Please login via OTP",
                                     null);
                         } else {
                             Response.error(exchange,
                                     HttpURLConnection.HTTP_BAD_REQUEST,
-                                    "Admin creation failed");
+                                    "Admin creation failed (possible duplicate email)");
                         }
 
                     } else {
-                        Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
+                        Response.error(exchange,
+                                HttpURLConnection.HTTP_BAD_METHOD,
+                                "Method not allowed");
                     }
                 }
 
@@ -186,65 +188,96 @@ public class AuthController implements HttpHandler {
                         Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
                     }
                 }
-
-                case "/api/verify-admin" -> {
-
-                    if ("POST".equalsIgnoreCase(method)) {
-
-                        Map<String, String> req =
-                                mapper.readValue(requestBody, Map.class);
-
-                        UUID userId = UUID.fromString(req.get("user_id"));
-
-                        boolean verified = service.verifyAdmin(userId);
-
-                        if (verified) {
-                            Response.success(exchange,
-                                    HttpURLConnection.HTTP_OK,
-                                    "Admin verified successfully",
-                                    null);
-                        } else {
-                            Response.error(exchange,
-                                    HttpURLConnection.HTTP_BAD_REQUEST,
-                                    "Admin not found");
-                        }
-
-                    } else {
-                        Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
-                    }
-                }
-
-                case "/api/unverified-admins" -> {
-
-                    if ("GET".equalsIgnoreCase(method)) {
-
-                        var admins = service.getAdminsByVerification(false);
-
-                        Response.success(exchange,
-                                HttpURLConnection.HTTP_OK,
-                                "Unverified admins",
-                                admins);
-
-                    } else {
-                        Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
-                    }
-                }
-
-                case "/api/verified-admins" -> {
-
-                    if ("GET".equalsIgnoreCase(method)) {
-
-                        var admins = service.getAdminsByVerification(true);
-
-                        Response.success(exchange,
-                                HttpURLConnection.HTTP_OK,
-                                "Verified admins",
-                                admins);
-
-                    } else {
-                        Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
-                    }
-                }
+//
+//                case "/api/verify-admin" -> {
+//
+//                    if ("POST".equalsIgnoreCase(method)) {
+//
+//                        Map<String, String> req =
+//                                mapper.readValue(requestBody, Map.class);
+//
+//                        if (req.containsKey("user_id") && !req.containsKey("otp")) {
+//
+//                            UUID userId = UUID.fromString(req.get("user_id"));
+//
+//                            boolean sent = service.sendAdminVerificationOtp(userId);
+//
+//                            if (sent) {
+//                                Response.success(exchange,
+//                                        HttpURLConnection.HTTP_OK,
+//                                        "OTP sent to admin email",
+//                                        null);
+//                            } else {
+//                                Response.error(exchange,
+//                                        HttpURLConnection.HTTP_BAD_REQUEST,
+//                                        "Failed to send OTP");
+//                            }
+//                        }
+//
+//                        else if (req.containsKey("user_id") && req.containsKey("otp")) {
+//
+//                            UUID userId = UUID.fromString(req.get("user_id"));
+//
+//                            boolean verified = service.verifyAdminWithOtp(
+//                                    userId,
+//                                    req.get("otp")
+//                            );
+//
+//                            if (verified) {
+//                                Response.success(exchange,
+//                                        HttpURLConnection.HTTP_OK,
+//                                        "Admin verified successfully",
+//                                        null);
+//                            } else {
+//                                Response.error(exchange,
+//                                        HttpURLConnection.HTTP_BAD_REQUEST,
+//                                        "Invalid OTP or already verified");
+//                            }
+//                        }
+//
+//                        else {
+//                            Response.error(exchange,
+//                                    HttpURLConnection.HTTP_BAD_REQUEST,
+//                                    "Invalid request");
+//                        }
+//
+//                    } else {
+//                        Response.error(exchange,
+//                                HttpURLConnection.HTTP_BAD_METHOD,
+//                                "Method not allowed");
+//                    }
+//                }
+//                case "/api/unverified-admins" -> {
+//
+//                    if ("GET".equalsIgnoreCase(method)) {
+//
+//                        var admins = service.getAdminsByVerification(false);
+//
+//                        Response.success(exchange,
+//                                HttpURLConnection.HTTP_OK,
+//                                "Unverified admins",
+//                                admins);
+//
+//                    } else {
+//                        Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
+//                    }
+//                }
+//
+//                case "/api/verified-admins" -> {
+//
+//                    if ("GET".equalsIgnoreCase(method)) {
+//
+//                        var admins = service.getAdminsByVerification(true);
+//
+//                        Response.success(exchange,
+//                                HttpURLConnection.HTTP_OK,
+//                                "Verified admins",
+//                                admins);
+//
+//                    } else {
+//                        Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
+//                    }
+//                }
 
                 default -> Response.error(exchange,
                         HttpURLConnection.HTTP_NOT_FOUND,

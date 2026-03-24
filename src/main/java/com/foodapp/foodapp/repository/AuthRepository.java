@@ -24,8 +24,8 @@ public class AuthRepository {
 
     public static final String CREATE_USER = """
         INSERT INTO users
-        (id,name,phone,email,location,role_id)
-        VALUES (?,?,?,?,?,?)
+        (id,name,phone,email,location,role_id,is_verified)
+        VALUES (?,?,?,?,?,?,false)
         """;
 
     public static final String GET_ADMIN_ROLE_ID = """
@@ -42,8 +42,14 @@ public class AuthRepository {
 
     public static final String VERIFY_ADMIN = """
         UPDATE users
-        SET is_verified = true
+        SET is_verified = true,updated_at=now()
         WHERE id = ?
+        """;
+
+    public static final String VERIFY_RESTAURANT = """
+        UPDATE restaurants
+        SET is_verified = true,updated_at=now()
+        WHERE owner_id = ?
         """;
 
     public static final String GET_ADMINS_BY_VERIFICATION = """
@@ -59,4 +65,24 @@ public class AuthRepository {
         AND u.is_verified = ?
         ORDER BY u.created_at DESC
         """;
+    public static final String GET_EMAIL_BY_USER_ID = """
+    	    SELECT email
+    	    FROM users
+    	    WHERE id = ?
+    	    """;
+
+    	public static final String GET_USER_VERIFICATION_STATUS = """
+    	    SELECT is_verified FROM users WHERE id = ?
+    	""";
+    
+    public static final String GET_USER_ID_BY_EMAIL = """
+    	    SELECT id, is_verified FROM users WHERE email = ?
+    	""";
+    public static final String CREATE_RESTAURANT = """
+        INSERT INTO restaurants
+        (id, name, fssai_id, owner_id,location, is_verified, created_at)
+        VALUES (?,?,?,?,?,false,NOW())
+        """;
+    
+
 }

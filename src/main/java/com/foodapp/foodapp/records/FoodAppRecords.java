@@ -1,5 +1,6 @@
 package com.foodapp.foodapp.records;
 
+import java.util.List;
 import java.util.UUID;
 
 public class FoodAppRecords {
@@ -28,16 +29,36 @@ public class FoodAppRecords {
     ){}
     
     public record CreateAdminRequest(
-            String name,
-            String phone,
-            String email,
-            String location
-    ){}
-    
+    	    String name,
+    	    String phone,
+    	    String email,
+    	    String location
+    	) {}
     public record SuperAdminLoginRequest(
             String email,
             String password
     ){}
-    
+    public record CreateHotelRequest(
+    	    String name,
+    	    String location,
+    	    String fssaiId
+    	) {}
     public record LoginResult(UUID userId, String role) {}
+    
+    public record AddFoodRequest(
+            String name,
+            int quantity,
+            double price,
+            UUID restaurantId
+    ) {}
+    
+    public record PlaceOrderRequest(
+    	    UUID restaurantId,
+    	    List<OrderItem> items
+    	) {}
+
+    	public record OrderItem(
+    	    UUID foodId,
+    	    int quantity
+    	) {}
 }
