@@ -18,7 +18,7 @@ public class App {
         FoodService foodService=new FoodService();
         HotelService hotelService=new HotelService();
         HttpServer server =HttpServer.create(new InetSocketAddress(8080),0);
-        server.createContext("/api/send-otp", new AuthController(authService));
+        server.createContext("/api/login", new AuthController(authService));
         server.createContext("/api/verify-otp", new AuthController(authService));
         server.createContext("/api/create-user", new AuthController(authService));
         server.createContext("/api/create-admin",new AuthController(authService));

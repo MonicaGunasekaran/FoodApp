@@ -170,13 +170,19 @@ public class FoodService {
             con.setAutoCommit(false);
 
             for (OrderItem item : items) {
-
+            	
+                if (item.quantity() <= 0) {
+                    throw new RuntimeException(
+                        "Invalid quantity for food: " + item.foodId()
+                    );
+                }
                 try (PreparedStatement ps =
-                        con.prepareStatement(FoodRepository.UPDATE_FOOD_QUANTITY)) {
-
+                        con.prepareStatement(FoodRepository.ORDER_FOOD)) {
+            
                     ps.setInt(1, item.quantity());
-                    ps.setObject(2, item.foodId());
-                    ps.setInt(3, item.quantity());
+                    ps.setObject(2, restaurantId);
+                    ps.setObject(3, item.foodId());
+                    ps.setInt(4, item.quantity());
 
                     int updated = ps.executeUpdate();
 

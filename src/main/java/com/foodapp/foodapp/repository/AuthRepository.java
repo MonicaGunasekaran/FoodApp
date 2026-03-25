@@ -23,10 +23,10 @@ public class AuthRepository {
         """;
 
     public static final String CREATE_USER = """
-        INSERT INTO users
-        (id,name,phone,email,location,role_id,is_verified)
-        VALUES (?,?,?,?,?,?,false)
-        """;
+    	    INSERT INTO users
+    	    (id,name,phone,email,password,location,role_id,is_verified)
+    	    VALUES (?,?,?,?,?,?,?,false)
+    	    """;
 
     public static final String GET_ADMIN_ROLE_ID = """
         SELECT id
@@ -35,11 +35,10 @@ public class AuthRepository {
         """;
 
     public static final String CREATE_ADMIN = """
-        INSERT INTO users
-        (id,name,phone,email,location,role_id,is_verified,created_at)
-        VALUES (?,?,?,?,?,?,false,NOW())
-        """;
-
+    	    INSERT INTO users
+    	    (id,name,phone,email,password,location,role_id,is_verified,created_at)
+    	    VALUES (?,?,?,?,?,?,?,false,NOW())
+    	    """;
     public static final String VERIFY_ADMIN = """
         UPDATE users
         SET is_verified = true,updated_at=now()
@@ -83,6 +82,4 @@ public class AuthRepository {
         (id, name, fssai_id, owner_id,location, is_verified, created_at)
         VALUES (?,?,?,?,?,false,NOW())
         """;
-    
-
 }
