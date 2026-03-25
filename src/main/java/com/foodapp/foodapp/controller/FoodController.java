@@ -151,7 +151,7 @@ public class FoodController implements HttpHandler {
                         } else {
                             Response.error(exchange,
                                     HttpURLConnection.HTTP_BAD_REQUEST,
-                                    "Food not available");
+                                    "Insufficient Quantity");
                         }
 
                     } else {

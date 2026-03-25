@@ -22,7 +22,6 @@ public class AuthService {
 
     public boolean sendOtp(String email) {
         if (email == null || email.isBlank()) return false;
-
         try {
             String otp = String.valueOf(
                     ThreadLocalRandom.current().nextInt(100000, 1000000)

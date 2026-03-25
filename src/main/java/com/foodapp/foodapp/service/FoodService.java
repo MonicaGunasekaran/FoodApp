@@ -173,7 +173,7 @@ public class FoodService {
             	
                 if (item.quantity() <= 0) {
                     throw new RuntimeException(
-                        "Invalid quantity for food: " + item.foodId()
+                        "Invalid quantity 0"
                     );
                 }
                 try (PreparedStatement ps =
@@ -188,7 +188,7 @@ public class FoodService {
 
                     if (updated == 0) {
                         con.rollback();
-                        throw new RuntimeException("Insufficient quantity for food: " + item.foodId());
+                        throw new RuntimeException("Invalid food or quantity");
                     }
                 }
             }
@@ -196,7 +196,11 @@ public class FoodService {
             con.commit();
             return true;
 
-        } catch (Exception e) {
+        } 
+        catch (RuntimeException e) {
+            throw e;  
+        } 
+        catch (Exception e) {
             e.printStackTrace();
             return false;
         }
