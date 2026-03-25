@@ -40,17 +40,20 @@ public class AuthService {
     }
 
     public LoginResult verifyOtp(VerifyOtpRequest req) {
+
         if (req == null || req.email() == null || req.otp() == null) {
             return null;
         }
 
         try {
-            String storedOtp = RedisUtil.getOtp(req.email());
 
-            if (storedOtp == null || !storedOtp.equals(req.otp())) {
-                RedisUtil.deleteOtp(req.email());
-                return null;
-            }
+            String key = "otp:login:" + req.email();
+
+            String storedOtp = RedisUtil.getValue(key);
+
+            if (storedOtp == null) return null;
+
+            if (!storedOtp.equals(req.otp())) return null;
 
             try (Connection con = DbConfig.getConnection();
                  PreparedStatement ps =
@@ -60,16 +63,16 @@ public class AuthService {
                 ResultSet rs = ps.executeQuery();
 
                 if (rs.next()) {
+
                     UUID userId = rs.getObject("id", UUID.class);
                     String role = rs.getString("role_name");
 
-                    RedisUtil.deleteOtp(req.email());
+                    RedisUtil.deleteValue(key);
 
                     return new LoginResult(userId, role);
                 }
             }
 
-            RedisUtil.deleteOtp(req.email());
             return null;
 
         } catch (Exception e) {
@@ -77,12 +80,47 @@ public class AuthService {
             return null;
         }
     }
+    
+    public boolean loginWithPassword(String email, String password) {
 
+        if (email == null || password == null) return false;
+
+        try (Connection con = DbConfig.getConnection();
+             PreparedStatement ps =
+                     con.prepareStatement(AuthRepository.FIND_USER_WITH_ROLE)) {
+
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+
+            if (!rs.next()) return false;
+
+            String hashedPassword = rs.getString("password");
+
+            if (hashedPassword == null || !BCrypt.checkpw(password, hashedPassword)) {
+                return false;
+            }
+
+            String otp = String.valueOf(
+                    ThreadLocalRandom.current().nextInt(100000, 1000000)
+            );
+
+            String key = "otp:login:" + email;
+
+            RedisUtil.setValue(key, otp, 300);
+
+            MailUtil.sendOtp(email, otp);
+
+            return true;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
     public boolean createAdmin(CreateAdminRequest req) {
 
-        if (req == null ||
-            req.email() == null || req.email().isBlank() ||
-            req.name() == null || req.name().isBlank()) {
+        if (req == null || req.email() == null || req.password() == null) {
             return false;
         }
 
@@ -96,22 +134,23 @@ public class AuthService {
 
                 if (rs.next()) {
                     roleId = rs.getObject("id", UUID.class);
-                } else {
-                    throw new RuntimeException("ADMIN role not found");
                 }
             }
 
-            UUID userId = UUID.randomUUID();
+            if (roleId == null) return false;
+
+            String hashedPassword = BCrypt.hashpw(req.password(), BCrypt.gensalt());
 
             try (PreparedStatement ps =
                     con.prepareStatement(AuthRepository.CREATE_ADMIN)) {
 
-                ps.setObject(1, userId);
+                ps.setObject(1, UUID.randomUUID());
                 ps.setString(2, req.name());
                 ps.setString(3, req.phone());
                 ps.setString(4, req.email());
-                ps.setString(5, req.location());
-                ps.setObject(6, roleId);
+                ps.setString(5, hashedPassword);
+                ps.setString(6, req.location());
+                ps.setObject(7, roleId);
 
                 return ps.executeUpdate() > 0;
             }
@@ -124,7 +163,7 @@ public class AuthService {
 
     public boolean register(RegisterUserRequest req) {
 
-        if (req == null || req.email() == null || req.email().isBlank()) {
+        if (req == null || req.email() == null || req.password() == null) {
             return false;
         }
 
@@ -145,6 +184,8 @@ public class AuthService {
 
             if (roleId == null) return false;
 
+            String hashedPassword = BCrypt.hashpw(req.password(), BCrypt.gensalt());
+
             try (PreparedStatement ps =
                     con.prepareStatement(AuthRepository.CREATE_USER)) {
 
@@ -152,8 +193,9 @@ public class AuthService {
                 ps.setString(2, req.name());
                 ps.setString(3, req.phone());
                 ps.setString(4, req.email());
-                ps.setString(5, req.location());
-                ps.setObject(6, roleId);
+                ps.setString(5, hashedPassword);
+                ps.setString(6, req.location());
+                ps.setObject(7, roleId);
 
                 return ps.executeUpdate() > 0;
             }
@@ -163,7 +205,6 @@ public class AuthService {
             return false;
         }
     }
-
     public LoginResult superAdminLogin(SuperAdminLoginRequest req) {
 
         try (Connection con = DbConfig.getConnection();

@@ -60,54 +60,65 @@ public class AuthController implements HttpHandler {
 
             switch (path) {
 
-                case "/api/send-otp" -> {
+            case "/api/login" -> {
 
-                    if ("POST".equalsIgnoreCase(method)) {
+                if ("POST".equalsIgnoreCase(method)) {
 
-                        SendOtpRequest req =
-                                mapper.readValue(requestBody, SendOtpRequest.class);
+                    Map<String, String> req =
+                            mapper.readValue(requestBody, Map.class);
 
-                        boolean sent = service.sendOtp(req.email());
+                    String email = req.get("email");
+                    String password = req.get("password");
 
-                        if (sent) {
-                            Response.success(exchange, HttpURLConnection.HTTP_OK, "OTP sent", null);
-                        } else {
-                            Response.error(exchange, HttpURLConnection.HTTP_BAD_REQUEST, "Failed to send OTP");
-                        }
+                    boolean sent = service.loginWithPassword(email, password);
 
+                    if (sent) {
+                        Response.success(exchange, HttpURLConnection.HTTP_OK ,"OTP sent to the registered mail id", null);
                     } else {
-                        Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
+                        Response.error(exchange, HttpURLConnection.HTTP_BAD_REQUEST, "Invalid credentials");
                     }
+
+                } else {
+                    Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
                 }
+            }
 
-                case "/api/verify-otp" -> {
+            case "/api/verify-otp" -> {
 
-                    if ("POST".equalsIgnoreCase(method)) {
-                        VerifyOtpRequest req =
-                                mapper.readValue(requestBody, VerifyOtpRequest.class);
-                        LoginResult result = service.verifyOtp(req);
-                        if (result != null) {
-                            String token = JwtUtil.generateToken(
-                                    result.userId(),
-                                    result.role()
-                            );
-                            Map<String, Object> data = new HashMap<>();
-                            data.put("access_token", token);
-                            Response.success(exchange,
-                                    HttpURLConnection.HTTP_OK,
-                                    "Login success",
-                                    data);
-                        } else {
-                            Response.error(exchange,
-                                    HttpURLConnection.HTTP_BAD_REQUEST,
-                                    "Invalid OTP, expired OTP, or user not registered");
-                        }
+                if ("POST".equalsIgnoreCase(method)) {
+
+                    VerifyOtpRequest req =
+                            mapper.readValue(requestBody, VerifyOtpRequest.class);
+
+                    LoginResult result = service.verifyOtp(req);
+
+                    if (result != null) {
+
+                        String token = JwtUtil.generateToken(
+                                result.userId(),
+                                result.role()
+                        );
+
+                        Map<String, Object> data = new HashMap<>();
+                        data.put("access_token", token);
+
+                        Response.success(exchange,
+                                HttpURLConnection.HTTP_OK,
+                                "Login success",
+                                data);
+
                     } else {
                         Response.error(exchange,
-                                HttpURLConnection.HTTP_BAD_METHOD,
-                                "Method not allowed");
+                                HttpURLConnection.HTTP_BAD_REQUEST,
+                                "Invalid or expired OTP");
                     }
+
+                } else {
+                    Response.error(exchange,
+                            HttpURLConnection.HTTP_BAD_METHOD,
+                            "Method not allowed");
                 }
+            }
                 
                 case "/api/create-user" -> {
                     if ("POST".equalsIgnoreCase(method)) {
@@ -117,7 +128,7 @@ public class AuthController implements HttpHandler {
                         boolean created = service.register(req);
 
                         if (created) {
-                            Response.success(exchange, HttpURLConnection.HTTP_CREATED, "User created", null);
+                            Response.success(exchange, HttpURLConnection.HTTP_CREATED, "User created successfully", null);
                         } else {
                             Response.error(exchange, HttpURLConnection.HTTP_BAD_REQUEST, "User creation failed");
                         }
@@ -139,7 +150,7 @@ public class AuthController implements HttpHandler {
                         if (created) {
                             Response.success(exchange,
                                     HttpURLConnection.HTTP_CREATED,
-                                    "Admin created successfully. Please login via OTP",
+                                    "Admin created successfully. Please login via Password and OTP",
                                     null);
                         } else {
                             Response.error(exchange,
@@ -175,7 +186,7 @@ public class AuthController implements HttpHandler {
 
                             Response.success(exchange,
                                     HttpURLConnection.HTTP_OK,
-                                    "Super admin login success",
+                                    "Login success",
                                     data);
 
                         } else {
@@ -188,96 +199,6 @@ public class AuthController implements HttpHandler {
                         Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
                     }
                 }
-//
-//                case "/api/verify-admin" -> {
-//
-//                    if ("POST".equalsIgnoreCase(method)) {
-//
-//                        Map<String, String> req =
-//                                mapper.readValue(requestBody, Map.class);
-//
-//                        if (req.containsKey("user_id") && !req.containsKey("otp")) {
-//
-//                            UUID userId = UUID.fromString(req.get("user_id"));
-//
-//                            boolean sent = service.sendAdminVerificationOtp(userId);
-//
-//                            if (sent) {
-//                                Response.success(exchange,
-//                                        HttpURLConnection.HTTP_OK,
-//                                        "OTP sent to admin email",
-//                                        null);
-//                            } else {
-//                                Response.error(exchange,
-//                                        HttpURLConnection.HTTP_BAD_REQUEST,
-//                                        "Failed to send OTP");
-//                            }
-//                        }
-//
-//                        else if (req.containsKey("user_id") && req.containsKey("otp")) {
-//
-//                            UUID userId = UUID.fromString(req.get("user_id"));
-//
-//                            boolean verified = service.verifyAdminWithOtp(
-//                                    userId,
-//                                    req.get("otp")
-//                            );
-//
-//                            if (verified) {
-//                                Response.success(exchange,
-//                                        HttpURLConnection.HTTP_OK,
-//                                        "Admin verified successfully",
-//                                        null);
-//                            } else {
-//                                Response.error(exchange,
-//                                        HttpURLConnection.HTTP_BAD_REQUEST,
-//                                        "Invalid OTP or already verified");
-//                            }
-//                        }
-//
-//                        else {
-//                            Response.error(exchange,
-//                                    HttpURLConnection.HTTP_BAD_REQUEST,
-//                                    "Invalid request");
-//                        }
-//
-//                    } else {
-//                        Response.error(exchange,
-//                                HttpURLConnection.HTTP_BAD_METHOD,
-//                                "Method not allowed");
-//                    }
-//                }
-//                case "/api/unverified-admins" -> {
-//
-//                    if ("GET".equalsIgnoreCase(method)) {
-//
-//                        var admins = service.getAdminsByVerification(false);
-//
-//                        Response.success(exchange,
-//                                HttpURLConnection.HTTP_OK,
-//                                "Unverified admins",
-//                                admins);
-//
-//                    } else {
-//                        Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
-//                    }
-//                }
-//
-//                case "/api/verified-admins" -> {
-//
-//                    if ("GET".equalsIgnoreCase(method)) {
-//
-//                        var admins = service.getAdminsByVerification(true);
-//
-//                        Response.success(exchange,
-//                                HttpURLConnection.HTTP_OK,
-//                                "Verified admins",
-//                                admins);
-//
-//                    } else {
-//                        Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
-//                    }
-//                }
 
                 default -> Response.error(exchange,
                         HttpURLConnection.HTTP_NOT_FOUND,

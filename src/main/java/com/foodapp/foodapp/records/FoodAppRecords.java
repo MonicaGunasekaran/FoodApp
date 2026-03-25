@@ -24,16 +24,18 @@ public class FoodAppRecords {
     public record RegisterUserRequest(
             String email,
             String name,
+            String password,
             String phone,
             String location
     ){}
-    
+
     public record CreateAdminRequest(
-    	    String name,
-    	    String phone,
-    	    String email,
-    	    String location
-    	) {}
+            String name,
+            String phone,
+            String email,
+            String password,
+            String location
+    ){}
     public record SuperAdminLoginRequest(
             String email,
             String password

@@ -56,7 +56,7 @@ public class Response {
 
             Map<String, Object> response = new HashMap<>();
 
-            response.put("status", "success");
+            response.put("status", "Error");
             response.put("message", message);
 
             byte[] json = mapper.writeValueAsBytes(response);

@@ -3,7 +3,7 @@ package com.foodapp.foodapp.repository;
 public class FoodRepository {
 	 public static final String VALIDATE_RESTAURANT_OWNER = """
 		        SELECT id FROM restaurants
-		        WHERE id = ? AND owner_id = ?
+		        WHERE id = ? AND owner_id = ? and is_verified= true
 		    """;
 
 		    public static final String CREATE_FOOD = """
@@ -22,9 +22,9 @@ public class FoodRepository {
 		    		SELECT id, name, quantity, price from foods where restaurant_id=?
 		    		""";
 		    
-		    public static final String UPDATE_FOOD_QUANTITY = """
+		    public static final String ORDER_FOOD= """
 		    	    UPDATE foods
 		    	    SET quantity = quantity - ?
-		    	    WHERE id = ? AND quantity >= ?
+		    	    WHERE restaurant_id=? AND id = ? AND quantity >= ?
 		    	    """;
 }

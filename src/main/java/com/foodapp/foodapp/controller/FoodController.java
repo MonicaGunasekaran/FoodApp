@@ -64,7 +64,7 @@ public class FoodController implements HttpHandler {
                         } else {
                             Response.error(exchange,
                                     HttpURLConnection.HTTP_BAD_REQUEST,
-                                    "Failed to add food");
+                                    "Please verify the hotel first");
                         }
 
                     } else {
@@ -122,7 +122,7 @@ public class FoodController implements HttpHandler {
 
                         Response.success(exchange,
                                 HttpURLConnection.HTTP_OK,
-                                "Restaurants fetched",
+                                "Restaurants fetched successfully",
                                 restaurants);
 
                     } else {
@@ -151,7 +151,7 @@ public class FoodController implements HttpHandler {
                         } else {
                             Response.error(exchange,
                                     HttpURLConnection.HTTP_BAD_REQUEST,
-                                    "Order failed");
+                                    "Food not available");
                         }
 
                     } else {
@@ -162,7 +162,7 @@ public class FoodController implements HttpHandler {
                 }
                 default -> Response.error(exchange,
                         HttpURLConnection.HTTP_NOT_FOUND,
-                        "Route not found");
+                        "Method not found");
             }
 
         } catch (RuntimeException e) {

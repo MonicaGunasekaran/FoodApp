@@ -124,7 +124,7 @@ public class HotelController implements HttpHandler {
                                 );
 
                         if (verified) {
-                            Response.success(exchange, HttpURLConnection.HTTP_OK, "Hotel verified", null);
+                            Response.success(exchange, HttpURLConnection.HTTP_OK, "Hotel verified successfully", null);
                         } else {
                             Response.error(exchange, HttpURLConnection.HTTP_BAD_REQUEST, "Invalid OTP");
                         }
