@@ -17,30 +17,23 @@ public class Response {
             String message,
             Object data
     ) {
-
         try {
-
             Map<String, Object> response = new HashMap<>();
-
             response.put("status", "success");
             response.put("message", message);
             if (data != null) {
                 response.put("data", data);
             }
-
             byte[] json = mapper.writeValueAsBytes(response);
 
             exchange.getResponseHeaders().set(
                     "Content-Type",
                     "application/json; charset=UTF-8"
             );
-
             exchange.sendResponseHeaders(status, json.length);
-
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(json);
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -51,27 +44,19 @@ public class Response {
             int status,
             String message
     ) {
-
         try {
-
             Map<String, Object> response = new HashMap<>();
-
             response.put("status", "Error");
             response.put("message", message);
-
             byte[] json = mapper.writeValueAsBytes(response);
-
             exchange.getResponseHeaders().set(
                     "Content-Type",
                     "application/json; charset=UTF-8"
             );
-
             exchange.sendResponseHeaders(status, json.length);
-
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(json);
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }

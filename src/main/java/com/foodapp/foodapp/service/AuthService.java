@@ -5,18 +5,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-
+import org.mindrot.jbcrypt.BCrypt;
 import com.foodapp.foodapp.config.DbConfig;
 import com.foodapp.foodapp.records.FoodAppRecords.CreateAdminRequest;
 import com.foodapp.foodapp.records.FoodAppRecords.LoginResult;
-import com.foodapp.foodapp.records.FoodAppRecords.RegisterUserRequest;
 import com.foodapp.foodapp.records.FoodAppRecords.SuperAdminLoginRequest;
+import com.foodapp.foodapp.records.FoodAppRecords.UserSignupVerifyRequest;
 import com.foodapp.foodapp.records.FoodAppRecords.VerifyOtpRequest;
 import com.foodapp.foodapp.repository.AuthRepository;
 import com.foodapp.foodapp.utils.MailUtil;
 import com.foodapp.foodapp.utils.RedisUtil;
-
-import org.mindrot.jbcrypt.BCrypt;
 
 public class AuthService {
 
@@ -94,9 +92,14 @@ public class AuthService {
             if (!rs.next()) return false;
 
             String hashedPassword = rs.getString("password");
+            boolean isVerified = rs.getBoolean("is_verified");
 
             if (hashedPassword == null || !BCrypt.checkpw(password, hashedPassword)) {
                 return false;
+            }
+
+            if (!isVerified) {
+                throw new RuntimeException("Please verify your account before login");
             }
 
             String otp = String.valueOf(
@@ -111,6 +114,8 @@ public class AuthService {
 
             return true;
 
+        } catch (RuntimeException e) {
+            throw e;  
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -159,34 +164,84 @@ public class AuthService {
             return false;
         }
     }
+    
+    public String createOrVerifyUser(UserSignupVerifyRequest req) {
 
-    public boolean register(RegisterUserRequest req) {
+        if (req == null || req.email() == null || req.email().isBlank()) {
+            throw new RuntimeException("Email is required");
+        }
 
-        if (req == null || req.email() == null || req.password() == null) {
-            return false;
+        String key = "otp:signup:" + req.email();
+
+        if (req.otp() != null && !req.otp().isBlank()) {
+
+            String storedOtp = RedisUtil.getValue(key);
+
+            if (storedOtp == null || !storedOtp.equals(req.otp())) {
+                throw new RuntimeException("Invalid or expired OTP");
+            }
+
+            try (Connection con = DbConfig.getConnection();
+                 PreparedStatement ps =
+                         con.prepareStatement(AuthRepository.VERIFY_USER)) {
+
+                ps.setString(1, req.email());
+
+                int updated = ps.executeUpdate();
+
+                if (updated == 0) {
+                    throw new RuntimeException("User already verified or not found");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException("Verification failed");
+            }
+
+            RedisUtil.deleteValue(key);
+
+            return "User verified successfully";
+        }
+
+        if (req.password() == null || req.name() == null) {
+            throw new RuntimeException("Invalid signup data");
         }
 
         try (Connection con = DbConfig.getConnection()) {
 
+            try (PreparedStatement checkPs =
+                         con.prepareStatement(AuthRepository.CHECK_USER_EXISTS)) {
+
+                checkPs.setString(1, req.email());
+
+                ResultSet rs = checkPs.executeQuery();
+
+                if (rs.next()) {
+                    throw new RuntimeException("User already exists");
+                }
+            }
+
             UUID roleId = null;
 
             try (PreparedStatement ps =
-                    con.prepareStatement(AuthRepository.GET_ROLE_ID)) {
+                         con.prepareStatement(AuthRepository.GET_ROLE_ID)) {
 
                 ps.setString(1, "USER");
 
                 ResultSet rs = ps.executeQuery();
+
                 if (rs.next()) {
                     roleId = rs.getObject("id", UUID.class);
                 }
             }
 
-            if (roleId == null) return false;
+            if (roleId == null) {
+                throw new RuntimeException("Role not found");
+            }
 
             String hashedPassword = BCrypt.hashpw(req.password(), BCrypt.gensalt());
 
             try (PreparedStatement ps =
-                    con.prepareStatement(AuthRepository.CREATE_USER)) {
+                         con.prepareStatement(AuthRepository.CREATE_USER)) {
 
                 ps.setObject(1, UUID.randomUUID());
                 ps.setString(2, req.name());
@@ -196,12 +251,130 @@ public class AuthService {
                 ps.setString(6, req.location());
                 ps.setObject(7, roleId);
 
-                return ps.executeUpdate() > 0;
+                ps.executeUpdate();
             }
 
+            String otp = String.valueOf(
+                    ThreadLocalRandom.current().nextInt(100000, 1000000)
+            );
+
+            RedisUtil.setValue(key, otp, 300);
+
+            MailUtil.sendOtp(req.email(), otp);
+
+            return "User created. OTP sent to email";
+
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            throw new RuntimeException("User creation failed");
+        }
+    }
+    
+    public String createOrVerifyAdmin(CreateAdminRequest req) {
+
+        if (req == null || req.email() == null || req.email().isBlank()) {
+            throw new RuntimeException("Email is required");
+        }
+
+        String key = "otp:signup:" + req.email();
+
+        if (req.otp() != null && !req.otp().isBlank()) {
+
+            String storedOtp = RedisUtil.getValue(key);
+
+            if (storedOtp == null || !storedOtp.equals(req.otp())) {
+                throw new RuntimeException("Invalid or expired OTP");
+            }
+
+            try (Connection con = DbConfig.getConnection()) {
+
+                try (PreparedStatement ps =
+                        con.prepareStatement(AuthRepository.VERIFY_ADMIN_BY_EMAIL)) {
+
+                    ps.setString(1, req.email());
+
+                    int updated = ps.executeUpdate();
+
+                    if (updated == 0) {
+                        throw new RuntimeException("Admin already verified or not found");
+                    }
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException("Admin verification failed");
+            }
+
+            RedisUtil.deleteValue(key);
+
+            return "Admin verified successfully";
+        }
+
+        if (req.password() == null || req.name() == null) {
+            throw new RuntimeException("Invalid admin signup data");
+        }
+
+        try (Connection con = DbConfig.getConnection()) {
+
+            try (PreparedStatement checkPs =
+                    con.prepareStatement(AuthRepository.CHECK_ADMIN_EXISTS)) {
+
+                checkPs.setString(1, req.email());
+                ResultSet rs = checkPs.executeQuery();
+
+                if (rs.next()) {
+                    throw new RuntimeException("Admin already exists");
+                }
+            }
+
+            UUID roleId = null;
+
+            try (PreparedStatement ps =
+                    con.prepareStatement(AuthRepository.GET_ADMIN_ROLE_ID);
+                 ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+                    roleId = rs.getObject("id", UUID.class);
+                }
+            }
+
+            if (roleId == null) {
+                throw new RuntimeException("Admin role not found");
+            }
+
+            String hashedPassword = BCrypt.hashpw(req.password(), BCrypt.gensalt());
+
+            try (PreparedStatement ps =
+                    con.prepareStatement(AuthRepository.CREATE_ADMIN)) {
+
+                ps.setObject(1, UUID.randomUUID());
+                ps.setString(2, req.name());
+                ps.setString(3, req.phone());
+                ps.setString(4, req.email());
+                ps.setString(5, hashedPassword);
+                ps.setString(6, req.location());
+                ps.setObject(7, roleId);
+
+                ps.executeUpdate();
+            }
+
+            String otp = String.valueOf(
+                    ThreadLocalRandom.current().nextInt(100000, 1000000)
+            );
+
+            RedisUtil.setValue(key, otp, 300);
+
+            MailUtil.sendOtp(req.email(), otp);
+
+            return "Admin created. OTP sent to email";
+
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Admin creation failed");
         }
     }
     public LoginResult superAdminLogin(SuperAdminLoginRequest req) {
@@ -229,11 +402,10 @@ public class AuthService {
                     return new LoginResult(userId, role);
                 }
             }
-
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
         }
-
         return null;
     }
 }

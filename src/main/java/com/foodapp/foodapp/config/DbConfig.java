@@ -22,21 +22,6 @@ public class DbConfig {
                 DB_PASSWORD
         );
     }
-
-    public static Properties getMailProperties(){
-
-        Properties props = new Properties();
-
-        props.put("mail.smtp.host","smtp.gmail.com");
-        props.put("mail.smtp.port","587");
-        props.put("mail.smtp.auth","true");
-        props.put("mail.smtp.starttls.enable","true");
-
-        return props;
-    }
-
-    public static String MAIL_USERNAME =  "monica934541@gmail.com";
-    public static String MAIL_PASSWORD = "oypwnfoyswbuaetn";
     
     private static final String REDIS_HOST = "localhost";
     private static final int REDIS_PORT = 6379;

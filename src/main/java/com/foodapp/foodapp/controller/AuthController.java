@@ -4,18 +4,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.foodapp.foodapp.config.DbConfig;
 import com.foodapp.foodapp.records.FoodAppRecords.CreateAdminRequest;
 import com.foodapp.foodapp.records.FoodAppRecords.LoginResult;
-import com.foodapp.foodapp.records.FoodAppRecords.RegisterUserRequest;
-import com.foodapp.foodapp.records.FoodAppRecords.SendOtpRequest;
 import com.foodapp.foodapp.records.FoodAppRecords.SuperAdminLoginRequest;
+import com.foodapp.foodapp.records.FoodAppRecords.UserSignupVerifyRequest;
 import com.foodapp.foodapp.records.FoodAppRecords.VerifyOtpRequest;
 import com.foodapp.foodapp.service.AuthService;
 import com.foodapp.foodapp.utils.JwtUtil;
@@ -70,19 +66,33 @@ public class AuthController implements HttpHandler {
                     String email = req.get("email");
                     String password = req.get("password");
 
-                    boolean sent = service.loginWithPassword(email, password);
+                    try {
 
-                    if (sent) {
-                        Response.success(exchange, HttpURLConnection.HTTP_OK ,"OTP sent to the registered mail id", null);
-                    } else {
-                        Response.error(exchange, HttpURLConnection.HTTP_BAD_REQUEST, "Invalid credentials");
+                        boolean sent = service.loginWithPassword(email, password);
+
+                        if (sent) {
+                            Response.success(exchange,
+                                    HttpURLConnection.HTTP_OK,
+                                    "Password Verified. Otp Sent to the registered email.",
+                                    null);
+                        } else {
+                            Response.error(exchange,
+                                    HttpURLConnection.HTTP_BAD_REQUEST,
+                                    "Invalid credentials");
+                        }
+
+                    } catch (RuntimeException e) {
+                        Response.error(exchange,
+                                HttpURLConnection.HTTP_BAD_REQUEST,
+                                e.getMessage());
                     }
 
                 } else {
-                    Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
+                    Response.error(exchange,
+                            HttpURLConnection.HTTP_BAD_METHOD,
+                            "Method not allowed");
                 }
             }
-
             case "/api/verify-otp" -> {
 
                 if ("POST".equalsIgnoreCase(method)) {
@@ -120,51 +130,46 @@ public class AuthController implements HttpHandler {
                 }
             }
                 
-                case "/api/create-user" -> {
-                    if ("POST".equalsIgnoreCase(method)) {
-                        RegisterUserRequest req =
-                                mapper.readValue(requestBody, RegisterUserRequest.class);
+            case "/api/create-user" -> {
 
-                        boolean created = service.register(req);
+                if ("POST".equalsIgnoreCase(method)) {
 
-                        if (created) {
-                            Response.success(exchange, HttpURLConnection.HTTP_CREATED, "User created successfully", null);
-                        } else {
-                            Response.error(exchange, HttpURLConnection.HTTP_BAD_REQUEST, "User creation failed");
-                        }
+                    UserSignupVerifyRequest req =
+                            mapper.readValue(requestBody, UserSignupVerifyRequest.class);
 
-                    } else {
-                        Response.error(exchange, HttpURLConnection.HTTP_BAD_METHOD, "Method not allowed");
-                    }
+                    String message = service.createOrVerifyUser(req);
+
+                    Response.success(exchange,
+                            HttpURLConnection.HTTP_OK,
+                            message,
+                            null);
+
+                } else {
+                    Response.error(exchange,
+                            HttpURLConnection.HTTP_BAD_METHOD,
+                            "Method not allowed");
                 }
+            }
+            case "/api/create-admin" -> {
 
-                case "/api/create-admin" -> {
+                if ("POST".equalsIgnoreCase(method)) {
 
-                    if ("POST".equalsIgnoreCase(method)) {
+                    CreateAdminRequest req =
+                            mapper.readValue(requestBody, CreateAdminRequest.class);
 
-                        CreateAdminRequest req =
-                                mapper.readValue(requestBody, CreateAdminRequest.class);
+                    String message = service.createOrVerifyAdmin(req);
 
-                        boolean created = service.createAdmin(req);
+                    Response.success(exchange,
+                            HttpURLConnection.HTTP_OK,
+                            message,
+                            null);
 
-                        if (created) {
-                            Response.success(exchange,
-                                    HttpURLConnection.HTTP_CREATED,
-                                    "Admin created successfully. Please login via Password and OTP",
-                                    null);
-                        } else {
-                            Response.error(exchange,
-                                    HttpURLConnection.HTTP_BAD_REQUEST,
-                                    "Admin creation failed (possible duplicate email)");
-                        }
-
-                    } else {
-                        Response.error(exchange,
-                                HttpURLConnection.HTTP_BAD_METHOD,
-                                "Method not allowed");
-                    }
+                } else {
+                    Response.error(exchange,
+                            HttpURLConnection.HTTP_BAD_METHOD,
+                            "Method not allowed");
                 }
-
+            }
                 case "/api/super-admin-login" -> {
 
                     if ("POST".equalsIgnoreCase(method)) {

@@ -1,6 +1,6 @@
 package com.foodapp.foodapp.utils;
 
-import com.foodapp.foodapp.config.DbConfig;
+import com.foodapp.foodapp.config.MailConfig;
 
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
@@ -11,15 +11,15 @@ public class MailUtil {
 
     public static void sendOtp(String email,String otp) throws Exception {
 
-        Properties props = DbConfig.getMailProperties();
+        Properties props = MailConfig.getMailProperties();
 
         Session session = Session.getInstance(
                 props,
                 new Authenticator(){
                     protected PasswordAuthentication getPasswordAuthentication(){
                         return new PasswordAuthentication(
-                                DbConfig.MAIL_USERNAME,
-                                DbConfig.MAIL_PASSWORD
+                                MailConfig.MAIL_USERNAME,
+                                MailConfig.MAIL_PASSWORD
                         );
                     }
                 }
@@ -27,7 +27,7 @@ public class MailUtil {
 
         Message message = new MimeMessage(session);
 
-        message.setFrom(new InternetAddress(DbConfig.MAIL_USERNAME));
+        message.setFrom(new InternetAddress(MailConfig.MAIL_USERNAME));
         message.setRecipients(
                 Message.RecipientType.TO,
                 InternetAddress.parse(email)

@@ -29,13 +29,6 @@ public class FoodAppRecords {
             String location
     ){}
 
-    public record CreateAdminRequest(
-            String name,
-            String phone,
-            String email,
-            String password,
-            String location
-    ){}
     public record SuperAdminLoginRequest(
             String email,
             String password
@@ -63,4 +56,22 @@ public class FoodAppRecords {
     	    UUID foodId,
     	    int quantity
     	) {}
+    	
+    	public record UserSignupVerifyRequest(
+    	        String email,
+    	        String name,
+    	        String password,
+    	        String phone,
+    	        String location,
+    	        String otp
+    	){}
+    	
+    	public record CreateAdminRequest(
+    		    String name,
+    		    String phone,
+    		    String email,
+    		    String password,
+    		    String location,
+    		    String otp   
+    		){}
 }

@@ -10,7 +10,7 @@ public class AuthRepository {
         """;
 
     public static final String FIND_USER_WITH_ROLE = """
-        SELECT u.id, u.password, r.role_name
+        SELECT u.id, u.password, r.role_name, u.is_verified
         FROM users u
         JOIN roles r ON u.role_id = r.id
         WHERE u.email = ?
@@ -45,12 +45,6 @@ public class AuthRepository {
         WHERE id = ?
         """;
 
-    public static final String VERIFY_RESTAURANT = """
-        UPDATE restaurants
-        SET is_verified = true,updated_at=now()
-        WHERE owner_id = ?
-        """;
-
     public static final String GET_ADMINS_BY_VERIFICATION = """
         SELECT u.id,
                u.name,
@@ -77,9 +71,24 @@ public class AuthRepository {
     public static final String GET_USER_ID_BY_EMAIL = """
     	    SELECT id, is_verified FROM users WHERE email = ?
     	""";
-    public static final String CREATE_RESTAURANT = """
-        INSERT INTO restaurants
-        (id, name, fssai_id, owner_id,location, is_verified, created_at)
-        VALUES (?,?,?,?,?,false,NOW())
+
+    public static final String CHECK_USER_EXISTS = """
+        SELECT id FROM users WHERE email = ?
         """;
+
+    public static final String VERIFY_USER = """
+        UPDATE users
+        SET is_verified = true, updated_at = NOW()
+        WHERE email = ? AND is_verified = false
+        """;
+    
+    public static final String VERIFY_ADMIN_BY_EMAIL = """
+    	    UPDATE users
+    	    SET is_verified = true, updated_at = NOW()
+    	    WHERE email = ? AND is_verified = false
+    	""";
+
+    	public static final String CHECK_ADMIN_EXISTS = """
+    	    SELECT id FROM users WHERE email = ?
+    	""";
 }
