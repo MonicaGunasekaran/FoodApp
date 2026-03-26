@@ -7,7 +7,7 @@ import java.util.Properties;
 import redis.clients.jedis.JedisPool;
 
 public class DbConfig {
-
+// new comment added
     public static final String DB_URL =
             "jdbc:postgresql://localhost:5432/foodapp_db";
 
